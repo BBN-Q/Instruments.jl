@@ -63,8 +63,10 @@ typealias ViEvent ViObject
 typealias ViPEvent Ptr{ViEvent}
 typealias ViFindList ViObject
 typealias ViPFindList Ptr{ViFindList}
-
-
+typealias ViString ViPChar
+typealias ViRsrc ViString
+typealias ViBuf ViPByte;
+typealias ViAccessMode ViUInt32
 
 #Constants 
 #- Completion and Error Codes ----------------------------------------------*/
@@ -438,13 +440,13 @@ const VI_USE_OPERS                = 2
 const VI_DEREF_ADDR               = 3
 const VI_DEREF_ADDR_BYTE_SWAP     = 4
 
-const VI_TMO_IMMEDIATE            = 0
+const VI_TMO_IMMEDIATE            = 0x00000000
 const VI_TMO_INFINITE             = 0xFFFFFFFF
 
-const VI_NO_LOCK                  = 0
-const VI_EXCLUSIVE_LOCK           = 1
-const VI_SHARED_LOCK              = 2
-const VI_LOAD_CONFIG              = 4
+const VI_NO_LOCK                  = 0x00000000
+const VI_EXCLUSIVE_LOCK           = 0x00000001
+const VI_SHARED_LOCK              = 0x00000002
+const VI_LOAD_CONFIG              = 0x00000003
 
 const VI_NO_SEC_ADDR              = 0xFFFF
 
@@ -564,7 +566,7 @@ const VI_PXI_STAR_TRIG_CONTROLLER = 1413
 
 
 
-#Helper macro to make VISA call anc check the status for an error
+#Helper macro to make VISA call and check the status for an error
 macro check_status(viCall)
 	return quote
 		status = $viCall
@@ -578,7 +580,7 @@ end
 ######################################################################################################3
 
 
-#- Resource Manager Functions and Operations -------------------------------*/
+#- Resource Manager Functions and Operations -------------------------------#
 function viOpenDefaultRM()
 	rm = ViSession[0]
 	@check_status ccall((:viOpenDefaultRM, "visa64"), ViStatus, (ViPSession,), pointer(rm))
@@ -602,24 +604,37 @@ function viFindRsrc(sesn::ViSession, expr::String)
 		push!(instrStrs, bytestring(convert(Ptr{Uint8}, pointer(desc))))
 	end
 
-
 	instrStrs
 end
 
 
-# ViStatus _VI_FUNC  viFindNext      (ViFindList vi, ViChar _VI_FAR desc[]);
+
 # ViStatus _VI_FUNC  viParseRsrc     (ViSession rmSesn, ViRsrc rsrcName,
 #                                     ViPUInt16 intfType, ViPUInt16 intfNum);
 # ViStatus _VI_FUNC  viParseRsrcEx   (ViSession rmSesn, ViRsrc rsrcName, ViPUInt16 intfType,
 #                                     ViPUInt16 intfNum, ViChar _VI_FAR rsrcClass[],
 #                                     ViChar _VI_FAR expandedUnaliasedName[],
 #                                     ViChar _VI_FAR aliasIfExists[]);
-# ViStatus _VI_FUNC  viOpen          (ViSession sesn, ViRsrc name, ViAccessMode mode,
-#                                     ViUInt32 timeout, ViPSession vi);
+
+
+function viOpen(sesn::ViSession, name::ASCIIString; mode::ViAccessMode=VI_NO_LOCK, timeout::ViUInt32=VI_TMO_IMMEDIATE)
+	#Put the instrument handle
+	instrHandle = ViSession[0]
+	@check_status ccall((:viOpen, "visa64"), ViStatus, 
+						(ViSession, ViRsrc, ViAccessMode, ViUInt32, ViPSession),
+						sesn, name, mode, timeout, instrHandle)
+	instrHandle[1]
+end
+
+function viClose(viObj::ViObject)
+	@check_status ccall((:viClose, "visa64"), ViStatus, (ViObject,), viObj)
+end
+
+
+
 
 # #- Resource Template Operations --------------------------------------------*/
 
-# ViStatus _VI_FUNC  viClose         (ViObject vi);
 # ViStatus _VI_FUNC  viSetAttribute  (ViObject vi, ViAttr attrName, ViAttrState attrValue);
 # ViStatus _VI_FUNC  viGetAttribute  (ViObject vi, ViAttr attrName, void _VI_PTR attrValue);
 # ViStatus _VI_FUNC  viStatusDesc    (ViObject vi, ViStatus status, ViChar _VI_FAR desc[]);
@@ -639,3 +654,34 @@ end
 # ViStatus _VI_FUNC  viUninstallHandler(ViSession vi, ViEventType eventType, ViHndlr handler,
 #                                       ViAddr userHandle);
 
+
+
+#- Basic I/O Operations ----------------------------------------------------#
+
+function viWrite(instrHandle::ViSession, data::Vector{Uint8})
+	bytesWritten = ViUInt32[0]
+	@check_status ccall((:viWrite, "visa64"), ViStatus, (ViSession, ViBuf, ViUInt32, ViPUInt32),
+											instrHandle, data, length(data), bytesWritten )
+	bytesWritten[1]
+end
+
+function viRead(instrHandle::ViSession; bufSize::Uint32=0x00000400)
+	bytesRead = ViUInt32[0]
+	buffer = Array(Uint8, bufSize)
+	@check_status ccall((:viRead, "visa64"), ViStatus, (ViSession, ViBuf, ViUInt32, ViPUInt32),
+											instrHandle, buffer, bufSize, bytesRead)
+	bytestring(buffer[1:bytesRead[1]])
+end
+
+
+# ViStatus _VI_FUNC  viRead          (ViSession vi, ViPBuf buf, ViUInt32 cnt, ViPUInt32 retCnt);
+# ViStatus _VI_FUNC  viReadAsync     (ViSession vi, ViPBuf buf, ViUInt32 cnt, ViPJobId  jobId);
+# ViStatus _VI_FUNC  viReadToFile    (ViSession vi, ViConstString filename, ViUInt32 cnt,
+#                                     ViPUInt32 retCnt);
+# ViStatus _VI_FUNC  viWrite         (ViSession vi, ViBuf  buf, ViUInt32 cnt, ViPUInt32 retCnt);
+# ViStatus _VI_FUNC  viWriteAsync    (ViSession vi, ViBuf  buf, ViUInt32 cnt, ViPJobId  jobId);
+# ViStatus _VI_FUNC  viWriteFromFile (ViSession vi, ViConstString filename, ViUInt32 cnt,
+#                                     ViPUInt32 retCnt);
+# ViStatus _VI_FUNC  viAssertTrigger (ViSession vi, ViUInt16 protocol);
+# ViStatus _VI_FUNC  viReadSTB       (ViSession vi, ViPUInt16 status);
+# ViStatus _VI_FUNC  viClear         (ViSession vi);
