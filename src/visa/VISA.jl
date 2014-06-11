@@ -67,6 +67,8 @@ typealias ViString ViPChar
 typealias ViRsrc ViString
 typealias ViBuf ViPByte;
 typealias ViAccessMode ViUInt32
+typealias ViAttr ViUInt32
+
 
 #Constants 
 #- Completion and Error Codes ----------------------------------------------*/
@@ -253,6 +255,12 @@ const VI_ATTR_PXI_RECV_INTR_SEQ           =  0x3FFF4240
 const VI_ATTR_PXI_RECV_INTR_DATA          =  0x3FFF4241
 
 #- Attributes (platform dependent size) ------------------------------------*/
+
+if WORD_SIZE == 64
+	typealias ViAttrState ViUInt64
+else
+	typealias ViAttrState ViUInt32
+end
 
 if WORD_SIZE == 64
 	const VI_ATTR_USER_DATA_64                =  0x3FFF000A
@@ -635,8 +643,20 @@ end
 
 # #- Resource Template Operations --------------------------------------------*/
 
-# ViStatus _VI_FUNC  viSetAttribute  (ViObject vi, ViAttr attrName, ViAttrState attrValue);
-# ViStatus _VI_FUNC  viGetAttribute  (ViObject vi, ViAttr attrName, void _VI_PTR attrValue);
+function viSetAttribute(viObj::ViObject, attrName::ViAttr, attrValue::ViAttrState)
+	@check_status ccall((:viSetAttribute, "visa64"), ViStatus, 
+						(ViObject, ViAttr, ViAttrState),
+						viObj, attrName, attrValue)
+end
+
+function viGetAttribute(viObj::ViObject, attrName::ViAttr)
+	value = ViAttrState[0]
+	@check_status ccall((:viGetAttribute, "visa64"), ViStatus, 
+						(ViObject, ViAttr, Ptr{Void}),
+						viObj, attrName, value)
+	value[0]
+end
+
 # ViStatus _VI_FUNC  viStatusDesc    (ViObject vi, ViStatus status, ViChar _VI_FAR desc[]);
 # ViStatus _VI_FUNC  viTerminate     (ViObject vi, ViUInt16 degree, ViJobId jobId);
 
@@ -658,19 +678,21 @@ end
 
 #- Basic I/O Operations ----------------------------------------------------#
 
-function viWrite(instrHandle::ViSession, data::Vector{Uint8})
+function viWrite(instrHandle::ViSession, data::Union(ASCIIString, Vector{Uint8}))
 	bytesWritten = ViUInt32[0]
-	@check_status ccall((:viWrite, "visa64"), ViStatus, (ViSession, ViBuf, ViUInt32, ViPUInt32),
-											instrHandle, data, length(data), bytesWritten )
+	@check_status ccall((:viWrite, "visa64"), ViStatus,
+						(ViSession, ViBuf, ViUInt32, ViPUInt32),
+						instrHandle, data, length(data), bytesWritten)
 	bytesWritten[1]
 end
 
 function viRead(instrHandle::ViSession; bufSize::Uint32=0x00000400)
 	bytesRead = ViUInt32[0]
 	buffer = Array(Uint8, bufSize)
-	@check_status ccall((:viRead, "visa64"), ViStatus, (ViSession, ViBuf, ViUInt32, ViPUInt32),
-											instrHandle, buffer, bufSize, bytesRead)
-	bytestring(buffer[1:bytesRead[1]])
+	@check_status ccall((:viRead, "visa64"), ViStatus,
+						(ViSession, ViBuf, ViUInt32, ViPUInt32),
+						instrHandle, buffer, bufSize, bytesRead)
+	buffer[1:bytesRead[1]]
 end
 
 
