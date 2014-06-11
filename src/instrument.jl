@@ -1,6 +1,7 @@
 type Instrument 
 	handle::ViObject
 end
+Instrument() = Instrument(0)
 
 function connect!(instr::Instrument, address::String) 
 	instr.handle = viOpen(rm, address)
