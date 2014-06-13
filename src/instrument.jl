@@ -42,4 +42,3 @@ function query(instr::Instrument, msg::ASCIIString; delay::Real=0)
 	sleep(delay)
 	read(instr)
 end
-
