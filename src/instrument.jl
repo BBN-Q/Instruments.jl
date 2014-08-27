@@ -46,3 +46,15 @@ function query(instr::Instrument, msg::ASCIIString; delay::Real=0)
 	sleep(delay)
 	read(instr)
 end
+
+function binblockwrite(instr::Instrument, data::Vector, header::ASCIIString)
+	# Write binary block data to the instrument
+	
+	# Put together the header
+	block = [uint8(s) for s in header]
+	bytesPerWord = sizeof(eltype(data))
+	bytesOfData = string(bytesPerWord*length(data))
+	push!(block, uint8('#'))
+	push!(block, length(bytesOfData))
+	append!(block, [uint8(s) for s in bytesOfData])
+end
