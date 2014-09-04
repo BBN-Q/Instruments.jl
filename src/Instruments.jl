@@ -3,6 +3,7 @@ module Instruments
 export Instrument, GenericInstrument, connect!, disconnect!, write, read, query
 export find_resources
 export @scpifloat
+export @scpibool
 
 # package code goes here
 include("visa/VISA.jl")
