@@ -1,22 +1,20 @@
-import Base: write, read
-
 abstract Instrument
 
 type GenericInstrument <: Instrument
 	handle::ViObject
 	connected::Bool
-	bufSize::Uint32
+	bufSize::UInt32
 end
 GenericInstrument() = GenericInstrument(0, false, 1024)
 
-function connect!(instr::Instrument, address::String)
-	if !instr.connected 
+function connect!(instr::Instrument, address::AbstractString)
+	if !instr.connected
 		instr.handle = viOpen(rm, address)
 		instr.connected = true
 	end
-end	
+end
 
-function disconnect!(instr::Instrument) 
+function disconnect!(instr::Instrument)
 	if instr.connected
 		viClose(instr.handle)
 		instr.connected = false
@@ -40,6 +38,8 @@ end
 @check_connected write(instr::Instrument, msg::ASCIIString) = viWrite(instr.handle, msg)
 
 @check_connected read(instr::Instrument) = rstrip(bytestring(viRead(instr.handle; bufSize=instr.bufSize)), ['\r', '\n'])
+
+@check_connected readavailable(instr::Instrument) = readavailable(instr.handle)
 
 function query(instr::Instrument, msg::ASCIIString; delay::Real=0)
 	write(instr, msg)

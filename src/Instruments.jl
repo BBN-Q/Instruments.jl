@@ -5,7 +5,11 @@ export find_resources
 export @scpifloat
 export @scpibool
 
-# package code goes here
+import Base: write, read, readavailable
+
+# load the binary dependency path
+include("../deps/deps.jl")
+
 include("visa/VISA.jl")
 
 #Setup global resource manager
@@ -17,6 +21,6 @@ include("scpi.jl")
 
 
 # Helper functions to find instruments
-find_resources(expr::String="?*::INSTR") = Instruments.viFindRsrc(Instruments.rm, expr)
+find_resources(expr::AbstractString="?*::INSTR") = Instruments.viFindRsrc(Instruments.rm, expr)
 
 end # module
