@@ -166,7 +166,7 @@ function viGetAttribute(viObj::ViObject, attrName::ViAttr)
 	@check_status ccall((:viGetAttribute, libvisa), ViStatus,
 						(ViObject, ViAttr, Ptr{Void}),
 						viObj, attrName, value)
-	value[0]
+	value[]
 end
 
 # ViStatus _VI_FUNC  viStatusDesc    (ViObject vi, ViStatus status, ViChar _VI_FAR desc[]);
