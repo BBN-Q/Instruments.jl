@@ -8,7 +8,11 @@ export @scpibool
 import Base: write, read, readavailable
 
 # load the binary dependency path
-include("../deps/deps.jl")
+if isfile(joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl"))
+    include("../deps/deps.jl")
+else
+    error("Instruments.jl not properly installed. Please run Pkg.build(\"Instruments\")")
+end
 
 include("visa/VISA.jl")
 
