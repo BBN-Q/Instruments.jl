@@ -1,5 +1,5 @@
 #- Other VISA Definitions --------------------------------------------------*/
-
+const WORD_SIZE = 64
 const VI_NULL = 0
 
 const VI_TRUE = 1
@@ -181,9 +181,9 @@ const VI_ATTR_PXI_RECV_INTR_DATA          =  0x3FFF4241
 #- Attributes (platform dependent size) ------------------------------------*/
 
 if WORD_SIZE == 64
-  typealias ViAttrState ViUInt64
+  ViAttrState = ViUInt64
 else
-  typealias ViAttrState ViUInt32
+  ViAttrState = ViUInt32
 end
 
 if WORD_SIZE == 64

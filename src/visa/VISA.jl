@@ -13,35 +13,35 @@ See VPP-4.3.2 document for details.
 #It's most likely we don't actually need all of these but they're easy to
 #generate with some metaprogramming
 
-for typePair = [("UInt32", UInt32),
-				("Int32", Int32),
-				("UInt64", UInt64),
-				("Int64", Int64),
-				("UInt16", UInt16),
-				("Int16", Int16),
-				("UInt8", UInt8),
-				("Int8", Int8),
-				("Addr", Void),
-				("Char", Int8),
-				("Byte", UInt8),
-				("Boolean", UInt16),
-				("Real32", Float32),
-				("Real64", Float64),
-				("Status", Int32),
-				("Version", UInt32),
-				("Object", UInt32),
-				("Session", UInt32)
+for typePair = [("UInt32", Cuint),
+				("Int32", Cint),
+				("UInt64", Culonglong),
+				("Int64", Clonglong),
+				("UInt16", Cushort),
+				("Int16", Cshort),
+				("UInt8", Cuchar),
+				("Int8", Cchar),
+				("Addr", Cvoid),
+				("Char", Cchar),
+				("Byte", Cuchar),
+				("Boolean", Bool),
+				("Real32", Cfloat),
+				("Real64", Cdouble),
+				("Status", Cint),
+				("Version", Cuint),
+				("Object", Cuint),
+				("Session", Cuint)
 				]
 
-	viTypeName = symbol("Vi"*typePair[1])
-	viConsructorName = symbol("vi"*typePair[1])
-	viPTypeName = symbol("ViP"*typePair[1])
-	viATypeName = symbol("ViA"*typePair[1])
+	viTypeName = Symbol("Vi"*typePair[1])
+	viConsructorName = Symbol("vi"*typePair[1])
+	viPTypeName = Symbol("ViP"*typePair[1])
+	viATypeName = Symbol("ViA"*typePair[1])
 	@eval begin
-		typealias $viTypeName $typePair[2]
+		$viTypeName = $typePair[2]
 		$viConsructorName(x) = convert($viTypeName, x)
-		typealias $viPTypeName Ptr{$viTypeName}
-		typealias $viATypeName Array{$viTypeName, 1}
+		$viPTypeName = Ref{$viTypeName}
+		$viATypeName = Array{$viTypeName, 1}
 	end
 end
 
@@ -49,30 +49,30 @@ for typePair = [("Buf", "PByte"),
 				("String", "PChar"),
 				("Rsrc", "String")
 				]
-	viTypeName = symbol("Vi"*typePair[1])
-	viPTypeName = symbol("ViP"*typePair[1])
-	viATypeName = symbol("ViA"*typePair[1])
+	viTypeName = Symbol("Vi"*typePair[1])
+	viPTypeName = Symbol("ViP"*typePair[1])
+	viATypeName = Symbol("ViA"*typePair[1])
 
-	mappedViType = symbol("Vi"*typePair[2])
+	mappedViType = Symbol("Vi"*typePair[2])
 
 	@eval begin
-		typealias $viTypeName $mappedViType
-		typealias $viPTypeName $mappedViType
-		typealias $viATypeName Array{$viTypeName, 1}
+		$viTypeName = $mappedViType
+		$viPTypeName = $mappedViType
+		$viATypeName = Array{$viTypeName, 1}
 	end
 end
-
-typealias ViEvent ViObject
-typealias ViPEvent Ptr{ViEvent}
-typealias ViFindList ViObject
-typealias ViPFindList Ptr{ViFindList}
-typealias ViString ViPChar
-typealias ViRsrc ViString
-typealias ViBuf ViPByte;
-typealias ViAccessMode ViUInt32
-typealias ViAttr ViUInt32
-typealias ViEventType ViUInt32
-typealias ViEventFilter ViUInt32
+ViPChar = Ptr{UInt8}
+ViEvent = ViObject
+ViPEvent = Ref{ViEvent}
+ViFindList = ViObject
+ViPFindList = Ref{ViFindList}
+ViString = ViPChar
+ViRsrc = ViString
+ViBuf = ViPByte;
+ViAccessMode = ViUInt32
+ViAttr = ViUInt32
+ViEventType = ViUInt32
+ViEventFilter = ViUInt32
 
 
 ########################## Constants ###########################################
@@ -98,30 +98,41 @@ macro check_status(viCall)
 	end
 end
 
+function check_status(status)
+	if status < VI_SUCCESS
+		errMsg = codes[status]
+		error("VISA C call failed with status $(errMsg[1]): $(errMsg[2])")
+	end
+	status
+end
 
 
 #- Resource Manager Functions and Operations -------------------------------#
 function viOpenDefaultRM()
-	rm = ViSession[0]
-	@check_status ccall((:viOpenDefaultRM, libvisa), ViStatus, (ViPSession,), pointer(rm))
-	rm[1]
+	rm = ViPSession(0)
+	check_status(ccall((:viOpenDefaultRM, libvisa), ViStatus, (ViPSession,), rm))
+	rm.x
 end
 
 function viFindRsrc(sesn::ViSession, expr::AbstractString)
-	returnCount = ViUInt32[0]
-	findList = ViFindList[0]
-	desc = Array(ViChar, VI_FIND_BUFLEN)
-	@check_status ccall((:viFindRsrc, libvisa), ViStatus,
-						(ViSession, ViString, ViPFindList, ViPUInt32, ViPChar),
-						sesn, expr, findList, returnCount, desc)
+	returnCount = ViPUInt32(0)
+	findList = ViPFindList(0)
+	desc = zeros(ViByte, VI_FIND_BUFLEN)
+	descp = pointer(desc)
+	check_status(ccall((:viFindRsrc, libvisa), ViStatus,
+						(ViSession, ViString, ViPFindList, ViPUInt32, ViPByte),
+						sesn, expr, findList, returnCount, descp))
 
 	#Create the array of instrument strings and push them on
-	instrStrs = ASCIIString[bytestring(convert(Ptr{UInt8}, pointer(desc)))]
-	while (returnCount[1] > 1)
-		@check_status ccall((:viFindNext, libvisa), ViStatus,
-						(ViFindList, ViPChar), findList[1], desc)
-		returnCount[1] -= 1
-		push!(instrStrs, bytestring(convert(Ptr{UInt8}, pointer(desc))))
+	instrStrs = Vector{String}()
+	if returnCount.x > 0
+		push!(instrStrs, unsafe_string(descp))
+	end
+	for i=1:returnCount.x-1
+		check_status(ccall((:viFindNext, libvisa), ViStatus,
+						(ViFindList, ViPByte), findList.x, descp))
+		push!(instrStrs, unsafe_string(descp))
+		
 	end
 
 	instrStrs
@@ -137,17 +148,17 @@ end
 #                                     ViChar _VI_FAR aliasIfExists[]);
 
 
-function viOpen(sesn::ViSession, name::ASCIIString; mode::ViAccessMode=VI_NO_LOCK, timeout::ViUInt32=VI_TMO_IMMEDIATE)
+function viOpen(sesn::ViSession, name::String; mode::ViAccessMode=VI_NO_LOCK, timeout::ViUInt32=VI_TMO_IMMEDIATE)
 	#Pointer for the instrument handle
-	instrHandle = ViSession[0]
-	@check_status ccall((:viOpen, libvisa), ViStatus,
+	instrHandle = ViPSession(0)
+	check_status(ccall((:viOpen, libvisa), ViStatus,
 						(ViSession, ViRsrc, ViAccessMode, ViUInt32, ViPSession),
-						sesn, name, mode, timeout, instrHandle)
-	instrHandle[1]
+						sesn, name, mode, timeout, instrHandle))
+	instrHandle.x
 end
 
 function viClose(viObj::ViObject)
-	@check_status ccall((:viClose, libvisa), ViStatus, (ViObject,), viObj)
+	check_status(ccall((:viClose, libvisa), ViStatus, (ViObject,), viObj))
 end
 
 
@@ -156,16 +167,16 @@ end
 # #- Resource Template Operations --------------------------------------------*/
 
 function viSetAttribute(viObj::ViObject, attrName::ViAttr, attrValue::ViAttrState)
-	@check_status ccall((:viSetAttribute, libvisa), ViStatus,
+	check_status(ccall((:viSetAttribute, libvisa), ViStatus,
 						(ViObject, ViAttr, ViAttrState),
-						viObj, attrName, attrValue)
+						viObj, attrName, attrValue))
 end
 
 function viGetAttribute(viObj::ViObject, attrName::ViAttr)
 	value = ViAttrState[0]
-	@check_status ccall((:viGetAttribute, libvisa), ViStatus,
-						(ViObject, ViAttr, Ptr{Void}),
-						viObj, attrName, value)
+	check_status( ccall((:viGetAttribute, libvisa), ViStatus,
+						(ViObject, ViAttr, Ptr{Cvoid}),
+						viObj, attrName, value))
 	value[]
 end
 
@@ -178,31 +189,31 @@ end
 
 function viEnableEvent(instrHandle::ViSession, eventType::Integer,
 					   mechanism::Integer)
-	@check_status ccall((:viEnableEvent,libvisa), ViStatus,
+	check_status(ccall((:viEnableEvent,libvisa), ViStatus,
 						(ViSession, ViEventType, UInt16, ViEventFilter),
-						 instrHandle, eventType, mechanism, 0)
+						 instrHandle, eventType, mechanism, 0))
 end
 
 function viDisableEvent(instrHandle::ViSession, eventType::Integer,
 					   mechanism::Integer)
-	@check_status ccall((:viEnableEvent,libvisa), ViStatus,
+	check_status(ccall((:viEnableEvent,libvisa), ViStatus,
 						(ViSession, ViEventType, UInt16),
-						 instrHandle, eventType, mechanism)
+						 instrHandle, eventType, mechanism))
 end
 
 function viDiscardEvents(instrHandle::ViSession, eventType::ViEventType,
 					   mechanism::UInt16)
-	@check_status ccall((:viEnableEvent,libvisa), ViStatus,
+	check_status(ccall((:viEnableEvent,libvisa), ViStatus,
 						(ViSession, ViEventType, UInt16),
-						 instrHandle, eventType, mechanism)
+						 instrHandle, eventType, mechanism))
 end
 
 function viWaitOnEvent(instrHandle::ViSession, eventType::ViEventType, timeout::UInt32 = VI_TMO_INFINITE)
 	outType = Array(ViEventType)
 	outEvent = Array(ViEvent)
-	@check_status ccall((:viWaitOnEvent,libvisa), ViStatus,
+	check_status(ccall((:viWaitOnEvent,libvisa), ViStatus,
 						(ViSession, ViEventType, UInt32, Ptr{ViEventType}, Ptr{ViEvent}),
-						 instrHandle, eventType, timeout, outType, outEvent)
+						 instrHandle, eventType, timeout, outType, outEvent))
 	(outType[], outEvent[])
 end
 
@@ -224,26 +235,26 @@ end
 
 #- Basic I/O Operations ----------------------------------------------------#
 
-function viWrite(instrHandle::ViSession, data::Union{ASCIIString, Vector{UInt8}})
+function viWrite(instrHandle::ViSession, data::Union{String, Vector{UInt8}})
 	bytesWritten = ViUInt32[0]
-	@check_status ccall((:viWrite, libvisa), ViStatus,
+	check_status(ccall((:viWrite, libvisa), ViStatus,
 						(ViSession, ViBuf, ViUInt32, ViPUInt32),
-						instrHandle, data, length(data), bytesWritten)
+						instrHandle, pointer(data), length(data), bytesWritten))
 	bytesWritten[1]
 end
 
 function viRead!(instrHandle::ViSession, buffer::Array{UInt8})
 	bytesRead = ViUInt32[0]
-	status = @check_status ccall((:viRead, libvisa), ViStatus,
+	status = check_status(ccall((:viRead, libvisa), ViStatus,
 						(ViSession, ViBuf, ViUInt32, ViPUInt32),
-						instrHandle, buffer, sizeof(buffer), bytesRead)
+						instrHandle, buffer, sizeof(buffer), bytesRead))
 	return (status != VI_SUCCESS_MAX_CNT, bytesRead[])
 end
 
 function viRead(instrHandle::ViSession; bufSize::UInt32=0x00000400)
-	buf = Array(UInt8, bufSize)
+	buf = zeros(UInt8, bufSize)
 	(done, bytesRead) = viRead!(instrHandle, buf)
-	buf[1:bytesRead]
+	unsafe_string(pointer(buf))
 end
 
 function readavailable(instrHandle::ViSession)

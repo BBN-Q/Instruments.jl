@@ -1,20 +1,20 @@
-abstract Instrument
+abstract type Instrument end
 
-type GenericInstrument <: Instrument
+mutable struct GenericInstrument <: Instrument
 	handle::ViObject
 	connected::Bool
 	bufSize::UInt32
 end
 GenericInstrument() = GenericInstrument(0, false, 1024)
 
-function connect!(instr::Instrument, address::AbstractString)
+function connect!(rm, instr::Instrument, address::AbstractString)
 	if !instr.connected
 		instr.handle = viOpen(rm, address)
 		instr.connected = true
 	end
 end
 
-function disconnect!(instr::Instrument)
+function disconnect!(rm, instr::Instrument)
 	if instr.connected
 		viClose(instr.handle)
 		instr.connected = false
@@ -35,13 +35,13 @@ macro check_connected(ex)
 	return Expr(:function, esc(funcproto), esc(checkbody))
 end
 
-@check_connected write(instr::Instrument, msg::ASCIIString) = viWrite(instr.handle, msg)
+@check_connected write(instr::Instrument, msg::AbstractString) = viWrite(instr.handle, msg)
 
-@check_connected read(instr::Instrument) = rstrip(bytestring(viRead(instr.handle; bufSize=instr.bufSize)), ['\r', '\n'])
+@check_connected read(instr::Instrument) = rstrip(viRead(instr.handle; bufSize=instr.bufSize), ['\r', '\n'])
 
 @check_connected readavailable(instr::Instrument) = readavailable(instr.handle)
 
-function query(instr::Instrument, msg::ASCIIString; delay::Real=0)
+function query(instr::Instrument, msg::AbstractString; delay::Real=0)
 	write(instr, msg)
 	sleep(delay)
 	read(instr)
