@@ -1,6 +1,6 @@
 # Instruments
 
-Forked for updating by Alex Porter
+Updated to work with V1.0
 
 Instrument control with Julia.  
 
@@ -13,9 +13,10 @@ Available [online](http://instrumentsjl.readthedocs.org/).
 ```
 using Instruments
 
-instruments = find_resources() # returns a list of VISA strings for all found instruments
+rm = ResourceManager()
+instruments = find_resources(rm) # returns a list of VISA strings for all found instruments
 uwSource = Instrument()
-connect!(uwSource, "GPIB0::28::INSTR")
+connect!(rm, uwSource, "GPIB0::28::INSTR")
 query(uwSource, "*IDN?") # prints "Rohde&Schwarz,SMIQ...."
 disconnect!(uwSource)
 ```
