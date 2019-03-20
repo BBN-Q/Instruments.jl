@@ -14,7 +14,7 @@ function connect!(rm, instr::Instrument, address::AbstractString)
 	end
 end
 
-function disconnect!(rm, instr::Instrument)
+function disconnect!(instr::Instrument)
 	if instr.connected
 		viClose(instr.handle)
 		instr.connected = false

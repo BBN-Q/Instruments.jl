@@ -1,7 +1,7 @@
 module Instruments
 
 export Instrument, GenericInstrument, connect!, disconnect!, write, read, query
-export viOpenDefaultRM, viClose
+export ResourceManager
 export find_resources
 export @scpifloat
 export @scpibool
@@ -17,13 +17,11 @@ end
 
 include("visa/VISA.jl")
 
-#Setup global resource manager
-#rm = viOpenDefaultRM()
-
 include("instrument.jl")
 
 include("scpi.jl")
 
+ResourceManager() = viOpenDefaultRM()
 
 # Helper functions to find instruments
 find_resources(expr::AbstractString="?*::INSTR") = Instruments.viFindRsrc(Instruments.rm, expr)
