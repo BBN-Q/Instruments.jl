@@ -24,6 +24,6 @@ include("scpi.jl")
 ResourceManager() = viOpenDefaultRM()
 
 # Helper functions to find instruments
-find_resources(expr::AbstractString="?*::INSTR") = Instruments.viFindRsrc(Instruments.rm, expr)
+find_resources(rm, expr::AbstractString="?*::INSTR") = Instruments.viFindRsrc(rm, expr)
 
 end # module
