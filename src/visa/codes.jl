@@ -109,7 +109,7 @@ const VI_ERROR_NPERMISSION       = VI_ERROR+0x3FFF00A8 # BFFF00A8, -1073807192
 # Dictionary mapping codes to more verbose information #
 # See Appendix A of the NI-VISA Programmers Reference
 #Dictionary maps integer codes to tuples of (Code, Meaning)
-codes = Dict{Int,Tuple{ASCIIString,ASCIIString}}(
+codes = Dict{Int,Tuple{String,String}}(
     VI_SUCCESS => ("VI_SUCCESS", "Operation completed successfully."),
     VI_SUCCESS_EVENT_EN => ("VI_SUCCESS_EVENT_EN", "Specified event is already enabled for at least one of the specified mechanisms."),
     VI_SUCCESS_EVENT_DIS => ("VI_SUCCESS_EVENT_DIS", "Specified event is already disabled for at least one of the specified mechanisms."),
