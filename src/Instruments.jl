@@ -1,4 +1,7 @@
+__precompile__()
 module Instruments
+
+using PyCall
 
 export Instrument, GenericInstrument, connect!, disconnect!, write, read, query
 export ResourceManager
@@ -8,22 +11,14 @@ export @scpibool
 
 import Base: write, read, readavailable
 
-# load the binary dependency path
-if isfile(joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl"))
-    include("../deps/deps.jl")
-else
-    error("Instruments.jl not properly installed. Please run Pkg.build(\"Instruments\")")
-end
-
+include("init.jl")
 include("visa/VISA.jl")
-
 include("instrument.jl")
-
 include("scpi.jl")
 
-ResourceManager() = viOpenDefaultRM()
+ResourceManager() = @check_status visalib.open_default_resource_manager()
 
 # Helper functions to find instruments
-find_resources(rm, expr::AbstractString="?*::INSTR") = Instruments.viFindRsrc(rm, expr)
+find_resources(rm, expr::AbstractString="?*::INSTR") = visalib.list_resources(rm, expr)
 
 end # module
