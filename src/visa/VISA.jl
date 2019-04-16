@@ -3,7 +3,7 @@ include("codes.jl")
 #Atributes and other definitions
 include("constants.jl")
 
-#Helper macro to make VISA call and check the status for an error
+
 macro check_status(viCall)
 	return quote
 		status = $(esc(viCall))

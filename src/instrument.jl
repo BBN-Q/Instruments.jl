@@ -5,7 +5,7 @@ mutable struct GenericInstrument <: Instrument
 	connected::Bool
 	bufSize::UInt32
 end
-GenericInstrument() = GenericInstrument(0, false, 1024)
+GenericInstrument() = GenericInstrument(PyNULL(), false, 1024)
 
 function connect!(rm, instr::Instrument, address::AbstractString)
 	if !instr.connected
@@ -16,7 +16,7 @@ end
 
 function disconnect!(instr::Instrument)
 	if instr.connected
-		@check_status visalib.close(instr.handle)
+		check_status(visalib.close(instr.handle))
 		instr.connected = false
 	end
 end
