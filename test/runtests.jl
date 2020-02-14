@@ -5,8 +5,4 @@ using Test
 @test 1 == 1
 rm = ResourceManager()
 insts = Vector{String}()
-try
-    push!(insts, Instruments.viFindRsrc(rm, "?*::INSTR")...)
-catch LoadError
-    viClose(rm)
-end
+push!(insts, find_resources(rm, "?*::INSTR")...)

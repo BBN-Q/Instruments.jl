@@ -180,11 +180,6 @@ const VI_ATTR_PXI_RECV_INTR_DATA          =  0x3FFF4241
 
 #- Attributes (platform dependent size) ------------------------------------*/
 
-if WORD_SIZE == 64
-  ViAttrState = ViUInt64
-else
-  ViAttrState = ViUInt32
-end
 
 if WORD_SIZE == 64
   const VI_ATTR_USER_DATA_64                =  0x3FFF000A
@@ -240,7 +235,6 @@ else
 end
 
 #- Event Types -------------------------------------------------------------*/
-
 const VI_EVENT_IO_COMPLETION              =  0x3FFF2009
 const VI_EVENT_TRIG                       =  0xBFFF200A
 const VI_EVENT_SERVICE_REQ                =  0x3FFF200B
