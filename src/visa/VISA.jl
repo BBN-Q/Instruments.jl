@@ -267,7 +267,7 @@ function readavailable(instrHandle::ViSession)
 			break
 		end
 	end
-	takebuf_array(ret)
+	take!(ret)
 end
 
 
