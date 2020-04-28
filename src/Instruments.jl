@@ -12,7 +12,8 @@ import Base: write, read, readavailable
 if isfile(joinpath(dirname(dirname(@__FILE__)),"deps","deps.jl"))
     include("../deps/deps.jl")
 else
-    error("Instruments.jl not properly installed. Please run Pkg.build(\"Instruments\")")
+    #error("Instruments.jl not properly installed. Please run Pkg.build(\"Instruments\")")
+    @warn "No VISA libraries found, please check VISA installation for visa64 library!"
 end
 
 include("visa/VISA.jl")
