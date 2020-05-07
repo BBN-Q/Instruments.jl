@@ -18,7 +18,7 @@ this is available for all platforms.
 * Linux (32 bit only [#f1]_ ): `NI-VISA 14.0 <http://www.ni.com/download/ni-visa-14.0/4797/en/>`_
 * Mac OS X: `NI-VISA 14.0 <http://www.ni.com/download/ni-visa-14.0/4913/en/>`_
 
-Furthermore, the `Rohde & Schwarz VISA <https://www.rohde-schwarz.com/us/applications/r-s-visa-application-note_56280-148812.html?rusprivacypolicy=0>`_ was tested with Linux as well. It is also available for all platforms. 
+Furthermore, the `Rohde & Schwarz VISA 5.12.1 <https://www.rohde-schwarz.com/us/applications/r-s-visa-application-note_56280-148812.html?rusprivacypolicy=0>`_ was tested with Linux as well. It is also available for all platforms. 
 
 .. rubric:: Footnotes
 
