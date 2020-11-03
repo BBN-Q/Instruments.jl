@@ -259,7 +259,7 @@ end
 
 function readavailable(instrHandle::ViSession)
 	ret = IOBuffer()
-	buf = Array(UInt8, 0x400)
+	buf = Array{UInt8}(undef, 0x400)
 	while true
 		(done, bytesRead) = viRead!(instrHandle, buf)
 		write(ret,buf[1:bytesRead])
