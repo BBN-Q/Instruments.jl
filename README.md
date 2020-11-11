@@ -1,6 +1,6 @@
 # Instruments
 
-Updated to work with V1.0
+Updated to work with v1.0
 
 Instrument control with Julia.  
 
