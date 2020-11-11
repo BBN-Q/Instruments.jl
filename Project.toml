@@ -1,7 +1,7 @@
 name = "Instruments"
 uuid = "2c6aeda0-45f5-11e9-10ba-f7b3d6416888"
 authors = ["Alex Porter <aporter@blueorigin.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [compat]
 BinDeps = "0.8, 1.0"
